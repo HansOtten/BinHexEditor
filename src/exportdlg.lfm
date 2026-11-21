@@ -1,0 +1,173 @@
+object ExportForm: TExportForm
+  Left = 400
+  Height = 330
+  Top = 250
+  Width = 520
+  BorderStyle = bsDialog
+  Caption = 'Export'
+  ClientHeight = 330
+  ClientWidth = 520
+  OnCreate = FormCreate
+  Position = poOwnerFormCenter
+  object lblFormat: TLabel
+    Left = 12
+    Height = 15
+    Top = 16
+    Width = 40
+    Caption = 'Format'
+  end
+  object cbFormat: TComboBox
+    Left = 130
+    Height = 23
+    Top = 12
+    Width = 260
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 0
+    OnChange = cbFormatChange
+  end
+  object lblFile: TLabel
+    Left = 12
+    Height = 15
+    Top = 50
+    Width = 20
+    Caption = 'File'
+  end
+  object edFile: TEdit
+    Left = 130
+    Height = 23
+    Top = 46
+    Width = 290
+    TabOrder = 1
+  end
+  object btnBrowse: TButton
+    Left = 428
+    Height = 25
+    Top = 45
+    Width = 80
+    Caption = 'Browse...'
+    TabOrder = 2
+    OnClick = btnBrowseClick
+  end
+  object lblStart: TLabel
+    Left = 12
+    Height = 15
+    Top = 86
+    Width = 100
+    Caption = 'Start offset (hex)'
+  end
+  object edStart: TEdit
+    Left = 130
+    Height = 23
+    Top = 82
+    Width = 90
+    TabOrder = 3
+    OnChange = edRangeChange
+  end
+  object lblEnd: TLabel
+    Left = 240
+    Height = 15
+    Top = 86
+    Width = 90
+    Caption = 'End offset (hex)'
+  end
+  object edEnd: TEdit
+    Left = 340
+    Height = 23
+    Top = 82
+    Width = 90
+    TabOrder = 4
+    OnChange = edRangeChange
+  end
+  object lblLength: TLabel
+    Left = 130
+    Height = 15
+    Top = 112
+    Width = 100
+    Caption = 'Length'
+  end
+  object lblFileAddr: TLabel
+    Left = 12
+    Height = 15
+    Top = 142
+    Width = 110
+    Caption = 'File address (hex)'
+  end
+  object edFileAddr: TEdit
+    Left = 130
+    Height = 23
+    Top = 138
+    Width = 90
+    TabOrder = 5
+  end
+  object lblTapeID: TLabel
+    Left = 12
+    Height = 15
+    Top = 178
+    Width = 110
+    Caption = 'KIM tape ID (hex)'
+  end
+  object edTapeID: TEdit
+    Left = 130
+    Height = 23
+    Top = 174
+    Width = 50
+    TabOrder = 6
+    Text = '01'
+  end
+  object lblDefine: TLabel
+    Left = 12
+    Height = 15
+    Top = 214
+    Width = 110
+    Caption = 'Define directive'
+  end
+  object edDefine: TEdit
+    Left = 130
+    Height = 23
+    Top = 210
+    Width = 130
+    TabOrder = 7
+    Text = '.byte $'
+  end
+  object lblS9: TLabel
+    Left = 12
+    Height = 15
+    Top = 250
+    Width = 110
+    Caption = 'S9 start addr (hex)'
+  end
+  object edS9: TEdit
+    Left = 130
+    Height = 23
+    Top = 246
+    Width = 90
+    TabOrder = 8
+  end
+  object btnOK: TButton
+    Left = 340
+    Height = 25
+    Top = 292
+    Width = 80
+    Caption = 'Export'
+    Default = True
+    TabOrder = 9
+    OnClick = btnOKClick
+  end
+  object btnCancel: TButton
+    Left = 428
+    Height = 25
+    Top = 292
+    Width = 80
+    Cancel = True
+    Caption = 'Cancel'
+    ModalResult = 2
+    TabOrder = 10
+  end
+  object SaveDialog1: TSaveDialog
+    Title = 'Export to file'
+    Options = [ofEnableSizing, ofViewDetail]
+    Left = 460
+    Top = 140
+  end
+end

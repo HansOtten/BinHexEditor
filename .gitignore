@@ -1,0 +1,14 @@
+# Lazarus / Free Pascal build output
+lib/
+backup/
+*.lps
+*.res
+*.o
+*.ppu
+*.compiled
+BinHexEditor
+BinHexEditor.exe
+BinHexEditor.dbg
+test/lib/
+test/coretest
+test/coretest.exe

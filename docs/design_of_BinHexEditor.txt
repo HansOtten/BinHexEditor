@@ -1,0 +1,441 @@
+Specification of BinHexEditor  -  revision 3 (21 November 2026)
+==============================================================
+
+Revision 2 worked in the review remarks of revision 1.
+Revision 3 works in the >> remarks on revision 2: import touches only the
+bytes it writes (2.4, 7), screen update (4.2), insert in the ASCII part
+(4.4), search options (4.7).
+New remarks/answers can be added inline, marked with  >> .
+
+Notes from the first implementation (V0.1) are marked with  [V0.1] .
+
+GitHub: BinHexEditor (private for now)
+
+
+1. Goal and scope
+-----------------
+
+Import, edit and export the data of a data buffer in binary form. Buffer
+sizes are the common (E)EPROM sizes used in retro projects:
+
+  2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 Kbytes   (default 64K)
+
+  2716 = 2K, 2732 = 4K, 2764 = 8K, 27128 = 16K, 27256 = 32K, 27512 = 64K,
+  27C010 = 128K, 27C020 = 256K, 27C040 = 512K, 27C080 = 1M
+
+Byte numbers (offsets) start at 0.
+
+A GUI application written with Lazarus / Free Pascal.
+
+Import and export of hex formats go through the Convert8bithex units
+loadhexformats and savehexformats. These stay as they are, because many
+other applications use them. So for now the hex formats are limited to
+what these units support. hexglobals may change (see chapter 9).
+
+The multipart features are not used: every import/export is one
+contiguous data block.
+
+
+2. Architecture
+---------------
+
+2.1 Two buffers
+
+- Edit buffer: owned by the editor, dynamic array of byte, size is the
+  selected buffer size (2K .. 1M). All editing happens here.
+
+- Window buffer: hexglobals.buffer, 64K (+ slack). The load/save units
+  only know this buffer and 16 bit addresses ($0000-$FFFF).
+
+Import: the unit loads into the window, then the editor copies the data
+into the edit buffer at the chosen offset.
+Export: the editor copies the selected range into the window, at the
+file address, and calls the save procedure.
+
+2.2 Why
+
+The units are 16 bit by design: the size checks in loadBIN/loadhex stop
+at $FFFF+1, writehexword masks with $FFFF, Intel hex has no record type
+04, S-records are S1 only, KIM tape/papertape/PRG use 2 byte addresses.
+A bigger hexglobals.buffer would not change that.
+
+2.3 Consequences
+
+- Hex format import/export: at most 64K per operation, with a 16 bit
+  file address.
+- BIN load/save of the whole buffer (any size up to 1M) is done by the
+  editor's own small routines (chapter 6), not by the units.
+
+2.4 Empty byte
+
+The value of an "empty" byte: used when the buffer grows, for File > New,
+for an inserted cell and for the byte that moves in at the end after a
+delete.
+Default $FF (erased EPROM), selectable in Options.
+
+The window (hexglobals.buffer) is cleared with Initbuffer before every
+import/export; that is only the transfer area, never the edit buffer.
+
+2.5 What import and export change
+
+- Import only changes the bytes of the edit buffer where data from the
+  file is written. All other bytes stay intact, also the bytes in gaps
+  between the parts of a multipart file (see 7.2).
+- Export never changes the edit buffer.
+
+
+3. Main form
+------------
+
+3.1 Layout
+
+A scrolling grid, per row:
+
+  address | hex data (2 chars per byte) | ASCII data (1 char per byte)
+
+- 16 or 32 bytes per row (Options).
+- Hex cells are separated by a blank. ASCII characters are shown without
+  blanks in between. A blank separates the address, hex and ASCII parts.
+- Address column: 5 hex digits (00000-FFFFF). When a base address is set
+  (Options) the address column shows base + offset.
+- Fixed header above the grid: 0..F (16 per row) or 00..1F (32 per row),
+  above the hex part and above the ASCII part.
+- ASCII part: $20-$7E shown as character, the rest as '.'.
+  Option "strip bit 7": $A0-$FE are shown as the character of (byte and
+  $7F) - for 6502 code with bit 7 set strings.
+
+Example (16 bytes per row):
+
+  Addr   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123456789ABCDEF
+  00000  A9 00 85 F1 A2 FF 9A 20 1F 1F 4C 00 1C 48 45 4C  ...... ..L..HEL
+  00010  ...
+
+3.2 Status bar
+
+  Offset (and address if base set) | value hex/dec/char | buffer size |
+  selection start-end (length) | INS/OVR | Modified
+
+3.3 Title bar
+
+  BinHexEditor - <file name> [*]      (* = unsaved changes)
+
+3.4 Implementation
+
+TDrawGrid with OnDrawCell drawing straight from the edit buffer (no
+TStringGrid: 1M at 16 bytes per row is 65536 rows).
+
+
+4. Editing
+----------
+
+4.1 Cursor and selection
+
+- Mouse click on a cell selects it (shown inverse) as current cell, in
+  the hex or the ASCII part.
+- A range is selected with mouse drag, Shift+click or Shift+cursor keys.
+  The range is shown in both the hex and the ASCII part.
+
+4.2 Entering data (overwrite mode, default)
+
+- Hex part: hex characters 0-9, A-F (also a-f). After the first nibble
+  the cell shows the partial value; after the second nibble the byte is
+  written and the cursor moves to the next cell. Esc cancels a half
+  entered byte.
+- ASCII part: the typed character replaces the byte, cursor moves to the
+  next cell.
+- After a change only the changed cell(s) - hex and ASCII - and the
+  status bar are redrawn (TDrawGrid.InvalidateCell), not the whole
+  screen. Needed to see what was typed, and costs nothing.
+  Operations on ranges (fill, delete, insert, paste, import, resize)
+  redraw the visible part of the grid.
+
+4.3 Delete
+
+- Delete removes the byte at the cursor; the rest of the buffer moves
+  down one byte; the last byte becomes the empty byte. The cursor stays
+  at the same offset, which now holds the next byte.
+- With a range selected: Delete removes the range in the same way.
+
+4.4 Insert
+
+- Insert works in both the hex and the ASCII part.
+- Insert inserts an empty cell at the cursor and starts insert mode
+  (status bar INS).
+- Hex part: enter the hex contents of the cell (two nibbles). Tab adds
+  a new empty cell after the current one.
+- ASCII part: a typed character fills the current cell and inserts the
+  next empty cell, so text can be typed in as with a text editor. Tab
+  is not needed here (but works the same).
+  [V0.1] The next cell is inserted when the next character is typed, so
+  ending insert mode never leaves an extra empty cell behind.
+- [V0.1] Cursor keys also end insert mode.
+- Enter (or Esc, or a mouse click) ends insert mode. A still empty last
+  inserted cell is kept (it holds the empty byte).
+- Outside insert mode Tab jumps between the hex and the ASCII part.
+- The buffer size does not change: for every inserted cell the last
+  byte falls off. When that byte is not the empty byte a warning is
+  shown first (once per insert session).
+- A whole insert session is one undo step.
+
+4.5 Navigation
+
+  Cursor keys        up/down/left/right, where possible
+  Tab                hex <-> ASCII part (outside insert mode)
+  Home / End         start / end of the row
+  Ctrl+Home/Ctrl+End start / end of the buffer
+  PgUp / PgDn        one visible page up / down
+  Ctrl+G             go to offset (or address when base set)
+
+4.6 Undo / redo
+
+- Ctrl+Z undoes the last change, 10 levels deep. Ctrl+Y redoes.
+- One undo step is one operation: one byte entered, one delete, one
+  insert session, one fill, one import, one paste, one buffer resize.
+- For ranges the old contents are stored (snapshot of the range).
+- Loading a new buffer (File > Load) clears the undo history.
+
+4.7 Search (Edit > Find, Ctrl+F)
+
+Search dialog with:
+
+- Search for:
+    o Hex bytes: 1 to 16 bytes, typed as hex with or without blanks,
+      e.g.  A9 00 85 F1  or  A90085F1
+    o Hex words: 1 to 8 words of 4 hex digits, searched low byte first
+      (6502 order), e.g.  FFFA  is found as  FA FF.
+      Handy to find references to an address (JMP $1C00 = 4C 00 1C).
+    o ASCII text: 1 to 256 characters.
+- Options for ASCII text:
+    o case sensitive on/off (default off)
+    o ignore bit 7 on/off (default off) - finds strings with bit 7 set,
+      matches the "strip bit 7" display option
+- Where: whole buffer, or the selection (when there is one).
+- Direction: forward (default) or backward, from the cursor.
+- Wrap around at end/start of buffer: on/off (default on), with a
+  message when wrapped.
+- Found: the match is selected and scrolled into view; status bar shows
+  the offset. Not found: message, cursor stays.
+- F3 = find next, Shift+F3 = find previous, with the last search.
+- The last 10 search strings are kept in a drop down list (and in the
+  ini file).
+
+
+5. Menus
+--------
+
+5.1 Main menu
+
+File
+  New                    empty buffer of the current size (empty byte)
+  Load BIN...            replace the buffer with a binary file (6.1)
+  Import...              import a file via loadhexformats (7)
+  Save BIN               save the whole buffer as binary (6.2)
+  Save BIN as...
+  Export...              export selection or whole buffer via
+                         savehexformats (8)
+  Exit                   asks to save when there are unsaved changes
+
+Edit
+  Undo  Ctrl+Z
+  Redo  Ctrl+Y
+  Copy  Ctrl+C           selection to clipboard as hex text
+  Paste Ctrl+V           hex text from clipboard, overwrites at cursor
+  Fill selection...
+  Go to... Ctrl+G
+  Find... Ctrl+F         hex bytes/words or text (4.7)
+  Find next F3 / Find previous Shift+F3
+  Checksum               sum (16 bit) and CRC32 of selection or buffer
+
+Options
+  Buffer size            2K .. 1M
+  Bytes per row          16 / 32
+  Empty byte             default $FF
+  Base address           default 0, display only
+  Strip bit 7 in ASCII   on/off
+  Colors                 address, hex, ASCII, header, cursor, selection,
+                         modified bytes
+
+Help
+  Help
+  About                  with BinHexEditor's own version text
+
+5.2 Context menu (right mouse click in the grid)
+
+Always the same menu; items enabled depending on the selection:
+
+  Import here...         import at the cursor offset (7)
+  Fill selection...      (selection needed)
+  Export selection...    (selection needed) (8)
+  Copy / Paste
+  Checksum
+
+5.3 Changing options
+
+- Buffer size bigger: the buffer is extended with empty bytes at the
+  end.
+- Buffer size smaller: the last part is removed. When that part holds
+  anything other than the empty byte a warning is shown first. Undoable.
+- 16/32 bytes per row: the screen is refreshed with the new layout, the
+  cursor stays on the same byte.
+
+5.4 Settings
+
+All options and the last used folders/formats are saved in an ini file
+(TIniFile) and restored at start.
+
+
+6. Load / Save BIN (editor's own routines)
+------------------------------------------
+
+6.1 Load BIN
+
+- Replaces the whole buffer. Buffer is first filled with the empty
+  byte, data is loaded at offset 0.
+- A file bigger than the current buffer increases the buffer size to the
+  next size in the list. Files above 1M are refused.
+- A file smaller than the buffer: buffer size stays, rest stays empty.
+
+6.2 Save BIN
+
+- Writes the whole buffer (current size) as a binary file.
+- Exporting a selection as BIN: see 8 (BIN via the editor's own routine,
+  so also > 64K).
+
+
+7. Import (via loadhexformats)
+------------------------------
+
+7.1 Dialog
+
+- File and format: BIN, PRG, hex (plain), Intel hex, MOS papertape, TIM
+  papertape, Motorola S-record, Apple 1 hex, KIM tape.
+- Position:
+    o at the address in the file (BIN: at offset 0)
+      [V0.1] offset = address in the file - base address, so a ROM file
+      for $E000 lands at offset 0 when the base address is E000.
+    o at offset ...  (default: cursor offset, from "Import here")
+  "At offset" places the lowest address of the file at that offset.
+- BIN/hex (plain) have no address: always placed at the chosen offset.
+
+7.2 Steps
+
+1. Initbuffer(EmptyByte); startaddress := 0.
+2. BIN/PRG: check the file size first (PRG: size - 2). Above 64K: BIN is
+   loaded by the editor's own routine instead (6.1 at offset), PRG is
+   refused.
+3. OpenLoadFile, call the load procedure, CloseLoadFile.
+4. hloaded false: show exitreason, stop.
+5. ValidateBufferparts: every part 0 <= bufferstart <= bufferend <= $FFFF,
+   otherwise show exitreason and stop.
+6. Target: "at the address in the file": every part goes to offset =
+   its own address. "At offset X": the lowest bufferstart goes to X, the
+   other parts keep their distance to it.
+7. When the highest target byte does not fit, the buffer grows to the
+   next size (max 1M, otherwise refused).
+8. Copy each part separately (bufferstart..bufferend) into the edit
+   buffer. Only those bytes change: gaps between parts and the rest of
+   the edit buffer stay intact (2.5). A message tells how many parts
+   were imported when there is more than one.
+9. One undo step (snapshot of the range from the lowest to the highest
+   target byte); cursor to the start of the imported data; status bar
+   shows the imported range.
+
+
+8. Export (via savehexformats)
+------------------------------
+
+8.1 Dialog
+
+- Format: BIN, PRG, hex (plain), Intel hex, MOS papertape, TIM
+  papertape, Motorola S-record, Apple 1 hex, KIM tape, Define.
+- Start and end offset: prefilled with the selection (no selection: the
+  whole buffer).
+- File address: prefilled with (base address + start offset) and $FFFF.
+  Must satisfy: file address + length - 1 <= $FFFF.
+- Length (end - start + 1) at most 64K, except for BIN (editor's own
+  routine, any length).
+- Extra input per format, with defaults:
+    KIM tape     tape ID                     default $01
+    Define       directive string            default '.byte $'
+    S-record     start address in S9 record  default = file address
+    others       nothing extra
+
+8.2 Steps
+
+1. Initbuffer(EmptyByte).
+2. Copy the range from the edit buffer into the window at the file
+   address.
+3. SetSinglePart(file address, file address + length - 1)
+   (sets bufferparts[1], buffers_inuse := 1, startaddress, endaddress).
+4. SplitSaveFilename(filename).
+5. Call the save procedure, then CloseSaveFile (not all save procedures
+   close their file).
+6. saved false: show exitreason.
+
+
+9. Changes to hexglobals
+------------------------
+
+9.1 Window with slack
+
+  const
+    WindowSize  = $10000 ;  { address space of the load/save units }
+    WindowSlack = $100 ;    { catches overrun of one record, max 255 }
+  var
+    buffer : array[0 .. WindowSize + WindowSlack - 1] of byte ;
+
+Stays a static array, so convert8bithex (command line and GUI) needs no
+changes and Initbuffer (SizeOf(buffer)) keeps working. The slack keeps
+overruns of the loaders (one byte in loadBIN/loadhex at 64K+1, up to one
+record in Intel hex/papertape/S-record near $FFFF) away from bufferparts.
+
+9.2 New helper routines (also usable in convert8bithex)
+
+  function  OpenLoadFile(const filename : string) : boolean ;
+              AssignFile, FileMode := 0, Reset; sets LoadFileOpen and
+              exitreason
+  procedure CloseLoadFile ;       close only if open
+  procedure CloseSaveFile ;       close only if open
+  function  ValidateBufferparts : boolean ;
+              every part 0 <= start <= end <= $FFFF, else exitreason
+  procedure SetSinglePart(startaddr, endaddr : integer) ;
+              bufferparts[1], buffers_inuse := 1, startaddress,
+              endaddress
+
+9.3 versiontext stays as is (used by convert8bithex). BinHexEditor has
+its own version constant in its own unit.
+
+
+10. Build notes
+---------------
+
+- Compile with range and overflow checking off ({$R-}{$Q-}): the units
+  depend on byte wrap around (e.g. checksum : byte in the Intel hex
+  loader).
+- Known quirks of the units, not changed, handled by the editor:
+    o loadhexfile only accepts upper case A-F
+    o saveBINfile, savehexfile, saveKIMtape do not close the save file
+      (-> CloseSaveFile)
+    o loaders do not (all) check bounds (-> slack + ValidateBufferparts)
+- Command line parameter: a file name is loaded as BIN at start.
+- Drag and drop of a file on the form: Load BIN.
+
+
+10.1 Additions in V0.1
+
+- Shortcuts Ctrl+O Load BIN, Ctrl+I Import, Ctrl+S Save BIN, Ctrl+E
+  Export, Ctrl+A select all, F1 help.
+- Options > Font size (8-14).
+- Backspace: cancel half typed byte, otherwise cursor left.
+- Changed bytes ("modified" color) are marked until the next load/save;
+  undo does not remove the mark.
+
+
+11. Later (not in the first version)
+------------------------------------
+
+- Split/merge even/odd bytes for 16 bit EPROM pairs.
+- Compare two buffers/files.
+- Hex formats above 64K (Intel hex type 04, S2/S3 records) - would need
+  changes in the units.
+- Search and replace.

@@ -1,0 +1,267 @@
+object MainForm: TMainForm
+  Left = 200
+  Height = 600
+  Top = 100
+  Width = 900
+  Caption = 'BinHexEditor'
+  ClientHeight = 600
+  ClientWidth = 900
+  Menu = MainMenu1
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnDropFiles = FormDropFiles
+  OnResize = FormResize
+  OnShow = FormShow
+  Position = poScreenCenter
+  object StatusBar1: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 577
+    Width = 900
+    Panels = <
+      item
+        Width = 140
+      end
+      item
+        Width = 90
+      end
+      item
+        Width = 70
+      end
+      item
+        Width = 36
+      end
+      item
+        Width = 64
+      end
+      item
+        Width = 50
+      end>
+    SimplePanel = False
+  end
+  object MainMenu1: TMainMenu
+    Left = 40
+    Top = 40
+    object miFile: TMenuItem
+      Caption = '&File'
+      object miNew: TMenuItem
+        Caption = '&New'
+        OnClick = miNewClick
+      end
+      object miLoadBin: TMenuItem
+        Caption = '&Load BIN...'
+        ShortCut = 16463
+        OnClick = miLoadBinClick
+      end
+      object miImport: TMenuItem
+        Caption = '&Import...'
+        ShortCut = 16457
+        OnClick = miImportClick
+      end
+      object miSep1: TMenuItem
+        Caption = '-'
+      end
+      object miSaveBin: TMenuItem
+        Caption = '&Save BIN'
+        ShortCut = 16467
+        OnClick = miSaveBinClick
+      end
+      object miSaveBinAs: TMenuItem
+        Caption = 'Save BIN &as...'
+        OnClick = miSaveBinAsClick
+      end
+      object miExport: TMenuItem
+        Caption = '&Export...'
+        ShortCut = 16453
+        OnClick = miExportClick
+      end
+      object miSep2: TMenuItem
+        Caption = '-'
+      end
+      object miExit: TMenuItem
+        Caption = 'E&xit'
+        OnClick = miExitClick
+      end
+    end
+    object miEdit: TMenuItem
+      Caption = '&Edit'
+      OnClick = miEditClick
+      object miUndo: TMenuItem
+        Caption = '&Undo'
+        ShortCut = 16474
+        OnClick = miUndoClick
+      end
+      object miRedo: TMenuItem
+        Caption = '&Redo'
+        ShortCut = 16473
+        OnClick = miRedoClick
+      end
+      object miSep3: TMenuItem
+        Caption = '-'
+      end
+      object miCopy: TMenuItem
+        Caption = '&Copy (as hex text)'
+        ShortCut = 16451
+        OnClick = miCopyClick
+      end
+      object miPaste: TMenuItem
+        Caption = '&Paste (hex text)'
+        ShortCut = 16470
+        OnClick = miPasteClick
+      end
+      object miSelectAll: TMenuItem
+        Caption = 'Select &all'
+        ShortCut = 16449
+        OnClick = miSelectAllClick
+      end
+      object miSep4: TMenuItem
+        Caption = '-'
+      end
+      object miFill: TMenuItem
+        Caption = 'F&ill selection...'
+        OnClick = miFillClick
+      end
+      object miGoto: TMenuItem
+        Caption = '&Go to...'
+        ShortCut = 16455
+        OnClick = miGotoClick
+      end
+      object miFind: TMenuItem
+        Caption = '&Find...'
+        ShortCut = 16454
+        OnClick = miFindClick
+      end
+      object miFindNext: TMenuItem
+        Caption = 'Find &next'
+        ShortCut = 114
+        OnClick = miFindNextClick
+      end
+      object miFindPrev: TMenuItem
+        Caption = 'Find pre&vious'
+        ShortCut = 8306
+        OnClick = miFindPrevClick
+      end
+      object miSep5: TMenuItem
+        Caption = '-'
+      end
+      object miChecksum: TMenuItem
+        Caption = 'C&hecksum'
+        OnClick = miChecksumClick
+      end
+    end
+    object miOptions: TMenuItem
+      Caption = '&Options'
+      object miBuffer: TMenuItem
+        Caption = '&Buffer size'
+      end
+      object miPerRow16: TMenuItem
+        Caption = '&16 bytes per row'
+        Checked = True
+        GroupIndex = 1
+        RadioItem = True
+        OnClick = miPerRowClick
+      end
+      object miPerRow32: TMenuItem
+        Caption = '&32 bytes per row'
+        GroupIndex = 1
+        RadioItem = True
+        OnClick = miPerRowClick
+      end
+      object miSep6: TMenuItem
+        Caption = '-'
+      end
+      object miEmptyByte: TMenuItem
+        Caption = '&Empty byte...'
+        OnClick = miEmptyByteClick
+      end
+      object miBaseAddress: TMenuItem
+        Caption = 'Base &address...'
+        OnClick = miBaseAddressClick
+      end
+      object miStripBit7: TMenuItem
+        Caption = '&Strip bit 7 in ASCII'
+        OnClick = miStripBit7Click
+      end
+      object miSep7: TMenuItem
+        Caption = '-'
+      end
+      object miColors: TMenuItem
+        Caption = '&Colors'
+      end
+      object miFontSize: TMenuItem
+        Caption = '&Font size'
+      end
+    end
+    object miHelp: TMenuItem
+      Caption = '&Help'
+      object miHelpItem: TMenuItem
+        Caption = '&Help'
+        ShortCut = 112
+        OnClick = miHelpItemClick
+      end
+      object miAbout: TMenuItem
+        Caption = '&About'
+        OnClick = miAboutClick
+      end
+    end
+  end
+  object PopupMenu1: TPopupMenu
+    OnPopup = PopupMenu1Popup
+    Left = 120
+    Top = 40
+    object pmImport: TMenuItem
+      Caption = 'Import here...'
+      OnClick = pmImportClick
+    end
+    object pmFill: TMenuItem
+      Caption = 'Fill selection...'
+      OnClick = miFillClick
+    end
+    object pmExport: TMenuItem
+      Caption = 'Export selection...'
+      OnClick = miExportClick
+    end
+    object pmSep1: TMenuItem
+      Caption = '-'
+    end
+    object pmCopy: TMenuItem
+      Caption = 'Copy'
+      OnClick = miCopyClick
+    end
+    object pmPaste: TMenuItem
+      Caption = 'Paste'
+      OnClick = miPasteClick
+    end
+    object pmSep2: TMenuItem
+      Caption = '-'
+    end
+    object pmChecksum: TMenuItem
+      Caption = 'Checksum'
+      OnClick = miChecksumClick
+    end
+  end
+  object OpenDialog1: TOpenDialog
+    Title = 'Load BIN file'
+    Filter = 'Binary files (*.bin;*.rom)|*.bin;*.rom|All files (*.*)|*.*'
+    Options = [ofFileMustExist, ofEnableSizing, ofViewDetail]
+    Left = 200
+    Top = 40
+  end
+  object SaveDialog1: TSaveDialog
+    Title = 'Save BIN file'
+    DefaultExt = '.bin'
+    Filter = 'Binary files (*.bin;*.rom)|*.bin;*.rom|All files (*.*)|*.*'
+    Options = [ofOverwritePrompt, ofEnableSizing, ofViewDetail]
+    Left = 280
+    Top = 40
+  end
+  object ColorDialog1: TColorDialog
+    Color = clBlack
+    CustomColors.Strings = (
+      'ColorA=000000'
+    )
+    Left = 360
+    Top = 40
+  end
+end
