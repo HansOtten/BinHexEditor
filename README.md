@@ -1,14 +1,12 @@
 # BinHexEditor
 
+
 Import, edit and export the data of a data buffer in binary form.
+Perfect for manipulating E(E)PROM contents.
 
-A Lazarus / Free Pascal GUI hex editor for EPROM images of 2K .. 1M
-(2716 .. 27C080), with import and export of the 8 bit hex formats of
-Convert8bithex: BIN, PRG, hex, Intel hex, MOS papertape, TIM papertape,
+A Lazarus / Free Pascal GUI hex editor for binary files like EPROM images of 2K .. 1M
+, with import and export of the 8 bit hex formats BIN, PRG, hex, Intel hex, MOS papertape, TIM papertape,
 Motorola S-record, Apple 1 hex, KIM-1 tape and Define (assembler source).
-
-See [docs/design_of_BinHexEditor.txt](docs/design_of_BinHexEditor.txt) for
-the specification.
 
 ## Features
 
@@ -41,16 +39,6 @@ Convert8bithex units depend on byte wrap around.
 | `hexunits` | `loadhexformats`, `savehexformats` (unchanged Convert8bithex units) and `hexglobals` V1.1 |
 | `test`     | console test of the core units (round trip of all formats, undo, search) |
 | `docs`     | specification |
-
-`hexglobals` V1.1 is compatible with V1.0: the window buffer has 256 bytes
-of slack after $FFFF and there are some helper routines. It can replace
-the copy in convert8bithex.
-
-## Tests
-
-    cd test
-    fpc -Fu../src -Fu../hexunits -FUlib coretest.lpr
-    ./coretest
 
 ## License
 
